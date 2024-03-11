@@ -22,7 +22,7 @@ export default function App() {
       try{
         await tf.ready();
         await tf.setBackend('rn-webgl');
-        const loadedModel = await tf.loadLayersModel('https://firebasestorage.googleapis.com/v0/b/coffee-prediction-2a261.appspot.com/o/model.json?alt=media&token=46b463b7-cf20-4767-99dc-d2d5e35d8304','https://firebasestorage.googleapis.com/v0/b/coffee-prediction-2a261.appspot.com/o/weights.bin?alt=media&token=54901c53-bea4-4fd1-be89-f6674c1dac5e');
+        const loadedModel = await tf.loadLayersModel('https://firebasestorage.googleapis.com/v0/b/coffee-prediction-2a261.appspot.com/o/model.json?alt=media&token=a466f9a3-69ff-4b34-a75f-8b965c1066a5','https://firebasestorage.googleapis.com/v0/b/coffee-prediction-2a261.appspot.com/o/weights.bin?alt=media&token=b4425353-b92f-4d18-8e85-b404b7ab1ef7');
         setModel(loadedModel);
         console.log("Model loaded!")
       } catch (error) {
@@ -33,7 +33,7 @@ export default function App() {
     loadModel();
   }, []);
 
-  //Take picture and call imgur API
+  //Take picture and call imgbb API
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
     if (permissionResult.granted === false) {
@@ -46,51 +46,49 @@ export default function App() {
       });
       setLoading(true);
       if (!result.canceled) {
-        setImage(result.assets[0].base64);
-        uploadToImgur(result.assets[0].base64);
+        uploadToImgbb(result.assets[0].base64);
       }else{
         setLoading(false);
       }
     }
   };
 
-  //Upload image to imgur
-  const uploadToImgur = async (base64Image) => {
-    try {
-      const apiUrl = 'https://api.imgur.com/3/image';
-      const apiKey = '3217489148371163b751bd40306ada1e31944721'; 
-  
-      const headers = {
-        Authorization: `Bearer ${apiKey}`,
-      };
-  
-      const form = new FormData();
-      form.append('image', base64Image);
-  
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: headers,
-        body: form,
+// Upload image to imgbb
+const uploadToImgbb = async (base64Image) => {
+  try {
+    // Encode the image data as base64
+    const imageData = base64Image;
+
+    // Create a FormData object
+    const formData = new FormData();
+    formData.append('image', imageData);
+
+    // Make the POST request
+    fetch('https://api.imgbb.com/1/upload?key=e39a11a3661e282d762593c2bcfee657', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      body: formData,
+    })
+      .then(response => response.json())
+      .then(data => {
+        setImage(data.data.url);
+        roboflowInference(data.data.url)
+      })
+      .catch(error => {
+        console.error('Error:', error);
       });
+
+  } catch (error) {
+    console.error('Error uploading image to Imgbb:', error);
+    throw error;
+  }
   
-      const data = await response.json();
-  
-      if (data.success) {
-        setImage(data.data.link);
-        roboflowInference(data.data.link)
-        
-      } else {
-        throw new Error('Failed to upload image to Imgur');
-      }
-    } catch (error) {
-      console.error('Error uploading image to Imgur:', error);
-      throw error;
-    }
-  };
+};
 
   //Make leaves, damaged leaves and fruit inferences
   const roboflowInference = async (ImgLink) => {
-    console.log(ImgLink)
     try {
       const apiUrl = 'https://detect.roboflow.com/coffee-leaf-detection/4';
       const apiKey = '9r1n3XfFDlZhbBnUfFTk';
@@ -126,7 +124,6 @@ export default function App() {
   };
 
   useEffect(()=> {
-    console.log(prediction)
     if(prediction?.predictions){
       const countInferences = async () => {
           let leavesCountTemp = 0;
@@ -153,9 +150,7 @@ export default function App() {
   
           // Update state with counts
           setLeaves(leavesCountTemp);
-          console.log(`Leaves count: ${leavesCountTemp}`)
           setDamagedLeaves(damagedLeavesCountTemp);
-          console.log(`Dead count: ${damagedLeavesCountTemp}`)
           setFruits(fruitCountTemp);
           console.log(`Fruit count: ${fruitCountTemp}`)
       };
@@ -187,7 +182,6 @@ export default function App() {
     const parsedResult = parseInt(result)
     const roundedResult = parsedResult.toFixed(1)
     setFruits(roundedResult)
-    console.log(`Prediction ${roundedResult}`)
     // Dispose the tensors to free up resources
     inputData.dispose();
     prediction.dispose();
