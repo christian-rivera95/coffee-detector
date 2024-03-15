@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { View, Image, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Platform } from 'react-native';
-import * as tf from '@tensorflow/tfjs';
-import '@tensorflow/tfjs-react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -11,27 +9,9 @@ export default function App() {
   const [image, setImage] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [loadedModel, setModel] = useState(null);
   const [leaves, setLeaves] = useState(null);
   const [damagedLeaves, setDamagedLeaves] = useState(null);
   const [fruits, setFruits] = useState(null);
-
-  //Load Decision Tree model
-  useEffect(() => {
-    async function loadModel() {
-      try{
-        await tf.ready();
-        await tf.setBackend('rn-webgl');
-        const loadedModel = await tf.loadLayersModel('https://firebasestorage.googleapis.com/v0/b/coffee-prediction-2a261.appspot.com/o/model.json?alt=media&token=a466f9a3-69ff-4b34-a75f-8b965c1066a5','https://firebasestorage.googleapis.com/v0/b/coffee-prediction-2a261.appspot.com/o/weights.bin?alt=media&token=b4425353-b92f-4d18-8e85-b404b7ab1ef7');
-        setModel(loadedModel);
-        console.log("Model loaded!")
-      } catch (error) {
-        console.error('Error initializing TensorFlow.js:', error);
-      }
-    }
-
-    loadModel();
-  }, []);
 
   //Take picture and call imgbb API
   const pickImage = async () => {
@@ -56,12 +36,9 @@ export default function App() {
 // Upload image to imgbb
 const uploadToImgbb = async (base64Image) => {
   try {
-    // Encode the image data as base64
-    const imageData = base64Image;
-
     // Create a FormData object
     const formData = new FormData();
-    formData.append('image', imageData);
+    formData.append('image', base64Image);
 
     // Make the POST request
     fetch('https://api.imgbb.com/1/upload?key=e39a11a3661e282d762593c2bcfee657', {
@@ -152,7 +129,6 @@ const uploadToImgbb = async (base64Image) => {
           setLeaves(leavesCountTemp);
           setDamagedLeaves(damagedLeavesCountTemp);
           setFruits(fruitCountTemp);
-          console.log(`Fruit count: ${fruitCountTemp}`)
       };
       countInferences();
       
@@ -167,25 +143,27 @@ const uploadToImgbb = async (base64Image) => {
   }, [fruits])
 
   const makePrediction = async (leaves, deadLeaves) => {
-    const model = loadedModel;
-  
-    // Preprocess the input data if needed
-    const inputData = tf.tensor2d([[leaves, deadLeaves]]);
-    
-    // Make prediction
-    const prediction = model.predict(inputData);
-  
-    // Get the result
-    const result = prediction.dataSync()[0];
-  
-    // Update your React component state or do something with the result
-    const parsedResult = parseInt(result)
-    const roundedResult = parsedResult.toFixed(1)
-    setFruits(roundedResult)
-    // Dispose the tensors to free up resources
-    inputData.dispose();
-    prediction.dispose();
-    setLoading(false);
+    if(leaves){
+      fetch('http://kurisu95.pythonanywhere.com/predict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          leaves: leaves,
+          damaged_leaves: deadLeaves,
+        }),
+      })
+        .then(response => response.json())
+        .then(data => {
+          setFruits(data.prediction)
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+    }else{
+      setFruits(0)
+    }
   };
 
   return (
@@ -212,10 +190,10 @@ const uploadToImgbb = async (base64Image) => {
         {loading && (
           <ActivityIndicator  size="large" color="#0000ff" />
         )}
-        {!loading && fruits && leaves && damagedLeaves &&(
+        {!loading && fruits !== undefined && leaves !== undefined && damagedLeaves !== undefined && prediction && (
           <View>
             <Text style={styles.predictionText}>Leaves: {leaves} - Damaged leaves: {damagedLeaves}</Text>
-            <Text style={styles.predictionText}>Predicted fruit production {fruits}</Text>
+            <Text style={styles.predictionText}>Predicted fruit production: {fruits}</Text>
           </View>
         )}
         
