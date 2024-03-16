@@ -4,6 +4,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
+
 
 export default function App() {
   const [image, setImage] = useState(null);
@@ -12,20 +14,44 @@ export default function App() {
   const [leaves, setLeaves] = useState(null);
   const [damagedLeaves, setDamagedLeaves] = useState(null);
   const [fruits, setFruits] = useState(null);
+  const [index, setIndex] = useState(0);
+  const [routes] = useState([
+    { key: 'camera', title: 'Camera' },
+    { key: 'gallery', title: 'Gallery' },
+  ]);
 
-  //Take picture and call imgbb API
+  const CameraRoute = () => (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+      {image && <Image source={{ uri: image }} style={styles.mainImage} />}
+    </View>
+  );
+  
+  const GalleryRoute = () => (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      {image && <Image source={{ uri: image }} style={styles.mainImage} />}
+    </View>
+  );
+
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
     if (permissionResult.granted === false) {
       alert('Permission to access camera was denied.');
-    } else {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        base64: true,
-        quality: 1,
-      });
-      setLoading(true);
-      if (!result.canceled) {
+    }else{
+      let result;
+      if (index === 0) {
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          base64: true,
+          quality: 1,
+        });
+      } else {
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          base64: true,
+          quality: 1,
+        });
+      }
+      if (!result.cancelled && result.assets) {
         uploadToImgbb(result.assets[0].base64);
       }else{
         setLoading(false);
@@ -166,10 +192,23 @@ const uploadToImgbb = async (base64Image) => {
     }
   };
 
+  const renderScene = SceneMap({
+    camera: CameraRoute,
+    gallery: GalleryRoute,
+  });
+
+  const renderCameraIcon = () => {
+    if (index === 0) {
+      return <MaterialIcons name="photo-camera" size={24} color="white" />;
+    } else {
+      return <MaterialIcons name="image" size={24} color="white" />;
+    }
+  };
+
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#9CC78B', '#aa92a8']} // Green to #aa92a8 gradient
+        colors={['#9CC78B', '#aa92a8']}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -182,14 +221,25 @@ const uploadToImgbb = async (base64Image) => {
       <View style={styles.banner}>
         <Text style={styles.bannerText}>Coffee App Predictor</Text>
       </View>
-      <View style={styles.content}>
-        {image && <Image source={{ uri: image }} style={styles.mainImage} />}
-        <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
-          <MaterialIcons name="photo-camera" size={24} color="white" />
-        </TouchableOpacity>
-        {loading && (
-          <ActivityIndicator  size="large" color="#0000ff" />
+      <TabView
+        navigationState={{ index, routes }}
+        renderScene={renderScene}
+        onIndexChange={setIndex}
+        initialLayout={{ width: '100%'}}
+        style={{ flex: 3 }}
+        renderTabBar={props => (
+          <TabBar
+            {...props}
+            indicatorStyle={{ backgroundColor: '#fff' }} // Color of the selected tab indicator
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', elevation: 0 }} // Background color of the tab bar and shadow depth
+          />
         )}
+      />
+      <View style={styles.content}>
+        <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
+          {renderCameraIcon()}
+        </TouchableOpacity>
+        {loading && <ActivityIndicator size="large" color="#0000ff" />}
         {!loading && fruits !== undefined && leaves !== undefined && damagedLeaves !== undefined && prediction && (
           <View>
             <Text style={styles.predictionText}>Leaves: {leaves} - Damaged leaves: {damagedLeaves}</Text>
@@ -229,9 +279,9 @@ const styles = StyleSheet.create({
   },
   imageOverlay: {
     position: 'absolute',
-    width: '100%', // Set width to cover the entire screen
-    height: '100%', // Set height to cover the entire screen
-    opacity: 0.3, // Adjust opacity as needed
+    width: '100%',
+    height: '100%',
+    opacity: 0.3,
   },
   content: {
     flex: 1,
@@ -239,14 +289,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   mainImage: {
-    width: '80%', // Set width to cover the entire screen
-    height: '70%', // Set height to cover the entire screen
-    marginBottom:20,
+    width: '95%',
+    height: '100%',
+    marginTop: 20,
   },
   cameraButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 50,
     padding: 15,
-    margin: 10
+    margin: 10,
   },
 });
