@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Image, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -12,6 +12,24 @@ export default function App() {
   const [leaves, setLeaves] = useState(0);
   const [damagedLeaves, setDamagedLeaves] = useState(0);
   const [fruits, setFruits] = useState(0);
+
+  const showAlert = () => {
+    Alert.alert(
+      'Alert Title',
+      'This is the alert message.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'OK',
+          onPress: () => console.log('OK Pressed')
+        }
+      ],
+      { cancelable: false }
+    );
+  };
 
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
@@ -113,7 +131,7 @@ export default function App() {
       const countInferences = async () => {
         let leavesCountTemp = 0;
         let damagedLeavesCountTemp = 0;
-
+  
         prediction.predictions.forEach((prediction) => {
           if (prediction.confidence > 0.65) {
             switch (prediction.class) {
@@ -128,14 +146,18 @@ export default function App() {
             }
           }
         });
-
+  
         setLeaves(leavesCountTemp);
         setDamagedLeaves(damagedLeavesCountTemp);
+        setLoading(false);
       };
+  
       countInferences();
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, [prediction]);
+  
 
   useEffect(() => {
     if (leaves !== null && damagedLeaves !== null) {
@@ -157,6 +179,7 @@ export default function App() {
       })
         .then(response => response.json())
         .then(data => {
+          Alert.alert('Prediction Made', `Prediction Data: ${JSON.stringify(data)}`);
           const roundedNumber = Math.round(data.prediction);
           setFruits(roundedNumber);
         })
@@ -166,7 +189,7 @@ export default function App() {
     } else {
       setFruits(0);
     }
-  };
+  };  
 
   return (
     <View style={styles.container}>
