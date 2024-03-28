@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Image, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Platform, Alert } from 'react-native';
+import { Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -9,27 +9,9 @@ export default function App() {
   const [image, setImage] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [leaves, setLeaves] = useState(0);
-  const [damagedLeaves, setDamagedLeaves] = useState(0);
-  const [fruits, setFruits] = useState(0);
-
-  const showAlert = () => {
-    Alert.alert(
-      'Alert Title',
-      'This is the alert message.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel'
-        },
-        {
-          text: 'OK',
-          onPress: () => console.log('OK Pressed')
-        }
-      ],
-      { cancelable: false }
-    );
-  };
+  const [leaves, setLeaves] = useState(null);
+  const [damagedLeaves, setDamagedLeaves] = useState(null);
+  const [fruits, setFruits] = useState(null);
 
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
@@ -112,6 +94,7 @@ export default function App() {
         method: 'POST',
         headers: Platform.OS === 'android' ? headers : { ...headers, 'Content-Type': 'multipart/form-data' },
       };
+      setLoading(true);
 
       fetch(`${apiUrl}?${new URLSearchParams(params)}`, requestConfig)
         .then(response => response.json())
@@ -149,7 +132,6 @@ export default function App() {
   
         setLeaves(leavesCountTemp);
         setDamagedLeaves(damagedLeavesCountTemp);
-        setLoading(false);
       };
   
       countInferences();
@@ -167,7 +149,7 @@ export default function App() {
 
   const makePrediction = async (leaves, damagedLeaves) => {
     if (leaves !== null) {
-      fetch('http://kurisu95.pythonanywhere.com/predict', {
+      fetch('https://kurisu95.pythonanywhere.com/predict', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -179,15 +161,16 @@ export default function App() {
       })
         .then(response => response.json())
         .then(data => {
-          Alert.alert('Prediction Made', `Prediction Data: ${JSON.stringify(data)}`);
           const roundedNumber = Math.round(data.prediction);
           setFruits(roundedNumber);
+          setLoading(false)
         })
         .catch(error => {
           console.error('Error:', error);
         });
     } else {
       setFruits(0);
+      setLoading(false)
     }
   };  
 

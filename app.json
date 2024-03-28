@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "coffee-detector",
+    "name": "Coffee Detector",
     "slug": "coffee-detector",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -23,15 +23,17 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.kurisu95.coffeedetector"
+      "package": "com.kurisu95.coffeedetector",
+      "permissions": ["INTERNET"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "05bfd0b3-c866-46c4-9f57-c6057a94fc09"
+        "projectId": "e1e2023c-6516-48ed-ba95-61b697b31534"
       }
-    }
+    },
+    "owner": "crivera9582"
   }
 }
