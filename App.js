@@ -9,9 +9,9 @@ export default function App() {
   const [image, setImage] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [leaves, setLeaves] = useState(null);
-  const [damagedLeaves, setDamagedLeaves] = useState(null);
-  const [fruits, setFruits] = useState(null);
+  const [leaves, setLeaves] = useState(0);
+  const [damagedLeaves, setDamagedLeaves] = useState(0);
+  const [fruits, setFruits] = useState(0);
 
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
