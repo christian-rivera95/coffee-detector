@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Image, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Image, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -19,6 +19,25 @@ export default function App() {
       alert('Permission to access camera was denied.');
     } else {
       const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        base64: true,
+        quality: 1,
+      });
+
+      if (!result.cancelled && result.assets) {
+        uploadToImgbb(result.assets[0].base64);
+      } else {
+        setLoading(false);
+      }
+    }
+  };
+
+  const pickImageFromGallery = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      alert('Permission to access gallery was denied.');
+    } else {
+      const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         base64: true,
         quality: 1,
@@ -171,9 +190,12 @@ export default function App() {
           <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
             <MaterialIcons name="photo-camera" size={24} color="white" />
           </TouchableOpacity>
+          <TouchableOpacity style={styles.cameraButton} onPress={pickImageFromGallery}>
+            <MaterialIcons name="image" size={24} color="white" />
+          </TouchableOpacity>
         </View>
         {loading && <ActivityIndicator size="large" color="#0000ff" />}
-        {!loading && fruits !== null && leaves !== null && damagedLeaves !== null && prediction && (
+        {!loading && fruits !== undefined && leaves !== undefined && damagedLeaves !== undefined && prediction && (
           <View>
             <Text style={styles.predictionText}>Leaves: {leaves} - Damaged leaves: {damagedLeaves}</Text>
             <Text style={styles.predictionText}>Predicted fruit production: {fruits}</Text>
