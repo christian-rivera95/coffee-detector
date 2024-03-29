@@ -116,7 +116,6 @@ export default function App() {
         let damagedLeavesCountTemp = 0;
   
         prediction.predictions.forEach((prediction) => {
-          if (prediction.confidence > 0.65) {
             switch (prediction.class) {
               case 'h':
                 leavesCountTemp += 1;
@@ -127,7 +126,6 @@ export default function App() {
               default:
                 break;
             }
-          }
         });
   
         setLeaves(leavesCountTemp);
